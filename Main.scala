@@ -93,11 +93,18 @@ object Main {
      Product(Sum(Var("a"), Var("b")), Difference(Var("a"), Const(1))),
      Product(Sum(Var("x"), Var("y")), Quotient(Sum(Const(3), Var("x")), Const(4))),
      Sum(Difference(Const(1), Var("a")), Const(3))
-     
     )
-    val bindingList : BindingList = { case "x" => 2 case "z" => 8};
 
     for(expression <- expressions){
+      val varToConst = new scala.collection.mutable.HashMap[String, Int]();
+      System.out.println("Expression: " + expression);
+      System.out.println(".  Please enter the binding list: ");
+      val sc = new java.util.Scanner(scala.io.StdIn.readLine());
+      while(sc.hasNext()){
+        varToConst.put(sc.next(), sc.nextInt());
+      }
+      val bindingList : BindingList = {case x => varToConst.get(x).get();}
+      //http://blog.danielwellman.com/2008/03/using-scalas-op.html
       val exp = substituteBindings(bindingList, expression);
       println("Expression: " + expression + "=" + simplify(expression));
     }
