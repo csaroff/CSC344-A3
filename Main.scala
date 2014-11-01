@@ -1,3 +1,4 @@
+import scala.collection.JavaConversions._;
 sealed abstract class Tree
 case class Const(v: Int) extends Tree {
   override def toString() = v.toString;
@@ -26,7 +27,11 @@ object Main {
   def substituteBindings (bl: BindingList, t: Tree):Tree = t match{
     case Const(v) => Const(v);
     case Var(n) => 
-    try{Const(bl(n));}catch{case mE: MatchError => {Var(n);}}
+      try{
+        Const(bl(n));
+      }catch{
+        case mE: MatchError => {Var(n);}
+      }
     //Const(bl(n));
     case Sum(l, r) => Sum(substituteBindings(bl, l), substituteBindings(bl, r));
     case Difference(l, r) => Difference(substituteBindings(bl, l), substituteBindings(bl, r));
@@ -96,17 +101,20 @@ object Main {
     )
 
     for(expression <- expressions){
-      val varToConst = new scala.collection.mutable.HashMap[String, Int]();
+      val varToConst = new java.util.HashMap[String, Int]();
       System.out.println("Expression: " + expression);
-      System.out.println(".  Please enter the binding list: ");
+      System.out.println("Please enter the binding list: ");
       val sc = new java.util.Scanner(scala.io.StdIn.readLine());
       while(sc.hasNext()){
         varToConst.put(sc.next(), sc.nextInt());
       }
-      val bindingList : BindingList = {case x => varToConst.get(x).get();}
+      for(key <- varToConst.keySet()){
+        System.out.println("<" + key + ", " + varToConst.get(key) + ">");
+      }
+      val bindingList : BindingList = {case x => varToConst.get(x);}
       //http://blog.danielwellman.com/2008/03/using-scalas-op.html
       val exp = substituteBindings(bindingList, expression);
-      println("Expression: " + expression + "=" + simplify(expression));
+      println("Expression: " + exp + "=" + simplify(exp));
     }
 
   }
