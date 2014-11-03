@@ -1,4 +1,5 @@
 import scala.collection.JavaConversions._;
+import scala.collection.mutable.HashMap;
 sealed abstract class Tree
 case class Const(v: Int) extends Tree {
   override def toString() = v.toString;
@@ -23,14 +24,14 @@ case class Quotient(l:Tree, r:Tree) extends Tree{
   "(" + l.toString() + "/" + r.toString() + ")";
 }
 object Main {
-  type BindingList = String => Int
+  type BindingList = String => Option[Int];
   def substituteBindings (bl: BindingList, t: Tree):Tree = t match{
     case Const(v) => Const(v);
     case Var(n) => 
-      try{
-        Const(bl(n));
-      }catch{
-        case mE: MatchError => {Var(n);}
+      if(bl(n).isDefined){
+        Const(bl(n).get);
+      }else{
+        Var(n);
       }
     //Const(bl(n));
     case Sum(l, r) => Sum(substituteBindings(bl, l), substituteBindings(bl, r));
@@ -38,7 +39,15 @@ object Main {
     case Product(l, r) => Product(substituteBindings(bl, l), substituteBindings(bl, r));
     case Quotient(l, r) => Quotient(substituteBindings(bl, l), substituteBindings(bl, r));
   }
-  def simplify(t: Tree): Tree = t match {
+  def simplify(t:Tree):Tree = t match {
+    case Var(x) => Var(x);
+    case Const(x) => Const(x);
+    case Sum(l,r) => simplifyTriple(Sum(simplify(l),simplify(r)));
+    case Product(l,r) => simplifyTriple(Product(simplify(l),simplify(r)));
+    case Difference(l,r) => simplifyTriple(Difference(simplify(l),simplify(r)));
+    case Quotient(l,r) => simplifyTriple(Quotient(simplify(l),simplify(r)));
+  }
+  def simplifyTriple(t: Tree): Tree = t match {
     case Sum(Const(l), Const(r)) => Const(l + r);
     case Sum(l, Const(r)) if(r==0) => simplify(l);
     case Sum(Const(l), r) if(l==0) => simplify(r);
@@ -101,18 +110,18 @@ object Main {
     )
 
     for(expression <- expressions){
-      val varToConst = new java.util.HashMap[String, Int]();
+      val varToConst = new HashMap[String, Int]();
       System.out.println("Expression: " + expression);
       System.out.println("Please enter the binding list: ");
       val sc = new java.util.Scanner(scala.io.StdIn.readLine());
       while(sc.hasNext()){
         varToConst.put(sc.next(), sc.nextInt());
       }
-      for(key <- varToConst.keySet()){
-        System.out.println("<" + key + ", " + varToConst.get(key) + ">");
+      for((key,value) <- varToConst){
+        System.out.println("<" + key + ", " + value + ">");
       }
       val bindingList : BindingList = {case x => varToConst.get(x);}
-      //http://blog.danielwellman.com/2008/03/using-scalas-op.html
+      //http://stackoverflow.com/questions/5740906/how-to-check-for-null-in-a-single-statement-in-scala
       val exp = substituteBindings(bindingList, expression);
       println("Expression: " + exp + "=" + simplify(exp));
     }
