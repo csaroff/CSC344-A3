@@ -1,30 +1,47 @@
 import scala.collection.JavaConversions._;
 import scala.collection.mutable.HashMap;
 sealed abstract class Tree
-case class Const(v: Int) extends Tree {
+sealed abstract class LeafNode extends Tree
+sealed abstract class InternalNode extends Tree
+case class Const(v: Int) extends LeafNode {
   override def toString() = v.toString;
 }
-case class Var(n: String) extends Tree {
+case class Var(n: String) extends LeafNode {
   override def toString() = n;
 }
-case class Sum(l: Tree, r: Tree) extends Tree {
+case class Sum(l: Tree, r: Tree) extends InternalNode {
   override def toString():String =
   "(" + l.toString() + "+" + r.toString() + ")";
 }
-case class Difference(l:Tree, r:Tree) extends Tree {
+case class Difference(l:Tree, r:Tree) extends InternalNode {
   override def toString():String =
   "(" + l.toString() + "-" + r.toString() + ")";
 }
-case class Product(l:Tree, r:Tree) extends Tree {
+case class Product(l:Tree, r:Tree) extends InternalNode {
   override def toString():String =
   "(" + l.toString() + "*" + r.toString() + ")";
 }
-case class Quotient(l:Tree, r:Tree) extends Tree{
+case class Quotient(l:Tree, r:Tree) extends InternalNode{
   override def toString():String =
   "(" + l.toString() + "/" + r.toString() + ")";
 }
 object Main {
   type BindingList = String => Option[Int];
+  def printTree(t:Tree) = t match{
+    case Sum(l,r) 
+      if(l.isInstanceOf[LeafNode]&&r.isInstanceOf[LeafNode])
+        => println(l + "+" + r);
+    case Difference(l,r) 
+      if(l.isInstanceOf[LeafNode]&&r.isInstanceOf[LeafNode])
+        => println(l + "-" + r);
+    case Product(l,r) 
+      if(l.isInstanceOf[LeafNode]&&r.isInstanceOf[LeafNode])
+        => println(l + "*" + r);
+    case Quotient(l,r) 
+      if(l.isInstanceOf[LeafNode]&&r.isInstanceOf[LeafNode])
+        => println(l + "/" + r);
+    case t => println(t);
+  }
   def substituteBindings (bl: BindingList, t: Tree):Tree = t match{
     case Const(v) => Const(v);
     case Var(n) => 
@@ -117,13 +134,15 @@ object Main {
       while(sc.hasNext()){
         varToConst.put(sc.next(), sc.nextInt());
       }
-      for((key,value) <- varToConst){
-        System.out.println("<" + key + ", " + value + ">");
-      }
+      //for((key,value) <- varToConst){
+      //  System.out.println("<" + key + ", " + value + ">");
+      //}
       val bindingList : BindingList = {case x => varToConst.get(x);}
-      //http://stackoverflow.com/questions/5740906/how-to-check-for-null-in-a-single-statement-in-scala
       val exp = substituteBindings(bindingList, expression);
-      println("Expression: " + exp + "=" + simplify(exp));
+      
+      println("Expression: " + exp + "=");
+      printTree(simplify(exp));
+      System.out.println("---------------------------------------");
     }
 
   }
